@@ -1,6 +1,6 @@
 # Gamification Scratch - Complete Project Summary
 
-This document provides an expanded, detailed overview of the Gamification Scratch project. It aims to explain not just _what_ the project is, but _how_ it works under the hood and its architectural decisions.
+This document provides an expanded, detailed overview of the Gamification Scratch project (the past project iteration). It aims to explain not just _what_ the project is, but _how_ it works under the hood and its architectural decisions.
 
 ## 1. What is this project?
 
