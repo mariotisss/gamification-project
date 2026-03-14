@@ -22,3 +22,6 @@ celerybeat.pid
 
 # Unit test/
 .pytest_cache/
+
+# VSCode
+.vscode/

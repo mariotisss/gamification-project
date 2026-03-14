@@ -9,7 +9,7 @@ src/
 ├── /backend                                 # Backend microservices and cron jobs
 │   ├── /core/pkg/gamification-system        # Main Hexagonal Module
 │   │   ├── /domain                          # Pure Python (Zero external dependencies)
-│   │   │   ├── /entities                    # Business data models + validation
+│   │   │   ├── /entities                    # Business data models + exceptions
 │   │   │   └── /ports                       # Abstract interfaces
 │   │   │       ├── /driven                  # Outbound interfaces (e.g., UserRepository)
 │   │   │       └── /driving                 # Inbound interfaces (e.g., Use Case definitions)
