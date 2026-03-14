@@ -1,0 +1,35 @@
+[project]
+name = "gamification-backend"
+version = "0.1.0"
+description = "Gamification platform backend — Hexagonal Architecture with FastAPI"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "pydantic>=2.0.0",
+    "uvicorn[standard]>=0.30.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+    "httpx>=0.27.0",
+    "ruff>=0.8.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src/backend"]
+
+[tool.pyright]
+pythonVersion = "3.12"
+typeCheckingMode = "basic"
+extraPaths = ["src/backend"]
+venvPath = "src/backend"
+venv = ".venv"
+
+[tool.ruff]
+src = ["src/backend"]
+
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
