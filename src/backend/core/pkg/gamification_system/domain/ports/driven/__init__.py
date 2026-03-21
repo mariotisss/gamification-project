@@ -1,0 +1,1 @@
+"""Driven (outbound) port interfaces."""
