@@ -9,6 +9,7 @@ docs/
 ├── roadmap/       # Time-ordered plans, milestones, phase summaries, and progress notes
 ├── features/      # Product/gameplay feature descriptions and future feature ideas
 ├── architecture/  # Technical architecture, code organization, and implementation patterns
+├── how-tos/       # Step-by-step tutorials for running or operating the project
 └── archive/       # Legacy or deprecated project context kept for reference
 ```
 
@@ -37,6 +38,10 @@ When adding a new progress document, use the next available number and a short k
 
 - [`architecture/hexagonal-architecture.md`](architecture/hexagonal-architecture.md)
 - [`architecture/controllers-structure.md`](architecture/controllers-structure.md)
+
+### How-tos
+
+- [`how-tos/how-to-run-backend.md`](how-tos/how-to-run-backend.md)
 
 ### Archive
 
