@@ -4,21 +4,14 @@ trigger: always_on
 
 # Python Code Quality Standard
 
-## What we agreed
-
-All Python code must be validated with **Ruff**, a fast linter and formatter that replaces multiple tools (Flake8, Black, isort, pyupgrade, etc.). Code must pass `ruff check` without errors and be formatted with `ruff format` before committing.
-
----
-
 ## Rules
 
-1. **Run `ruff check . --fix && ruff format .` before every commit** - This lints and formats your code automatically
-2. **Maximum line length is 100 characters** - Not 80, not 120
-3. **Target Python 3.11 syntax** - Use modern Python features (f-strings, `|` for unions, built-in generics)
-4. **Follow PEP 8 naming conventions** - Classes in `PascalCase`, functions in `snake_case`, constants in `UPPER_CASE`
-5. **Organize imports in three groups** - stdlib, third-party, local (Ruff does this automatically)
-6. **No unused imports or variables** - Ruff removes them automatically with `--fix`
-7. **Use double quotes for strings** - `"hello"` not `'hello'` (unless technically required)
+1. **Maximum line length is 100 characters** - Not 80, not 120
+2. **Target Python 3.11 syntax** - Use modern Python features (f-strings, `|` for unions, built-in generics)
+3. **Follow PEP 8 naming conventions** - Classes in `PascalCase`, functions in `snake_case`, constants in `UPPER_CASE`
+4. **Organize imports in three groups** - stdlib, third-party, local (Ruff does this automatically)
+5. **No unused imports or variables** - Ruff removes them automatically with `--fix`
+6. **Use double quotes for strings** - `"hello"` not `'hello'` (unless technically required)
 
 ---
 

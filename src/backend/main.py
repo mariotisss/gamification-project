@@ -2,31 +2,31 @@ from fastapi import FastAPI
 import uvicorn
 
 # ── Driven adapters (outbound) ───────────────────────────────────
-from core.pkg.gamification_system.infrastructure.driven.adapters.in_memory_user_repository import InMemoryUserRepository
-from core.pkg.gamification_system.infrastructure.driven.adapters.in_memory_mission_repository import InMemoryMissionRepository
-from core.pkg.gamification_system.infrastructure.driven.adapters.in_memory_reward_repository import InMemoryRewardRepository
+from core.pkg.user_system.infrastructure.driven.adapters.in_memory_user_repository import InMemoryUserRepository
+from core.pkg.mission_system.infrastructure.driven.adapters.in_memory_mission_repository import InMemoryMissionRepository
+from core.pkg.reward_system.infrastructure.driven.adapters.in_memory_reward_repository import InMemoryRewardRepository
 
 # ── Application services ─────────────────────────────────────────
-from core.pkg.gamification_system.application.use_cases.user_service import UserService
-from core.pkg.gamification_system.application.use_cases.mission_service import MissionService
-from core.pkg.gamification_system.application.use_cases.reward_service import RewardService
+from core.pkg.user_system.application.use_cases.user_service import UserService
+from core.pkg.mission_system.application.use_cases.mission_service import MissionService
+from core.pkg.reward_system.application.use_cases.reward_service import RewardService
 
 # ── Driving adapters (inbound) ───────────────────────────────────
-from core.pkg.gamification_system.infrastructure.driving.api.user.list_users_controller import ListUsersController
-from core.pkg.gamification_system.infrastructure.driving.api.user.get_user_controller import GetUserController
-from core.pkg.gamification_system.infrastructure.driving.api.user.create_user_controller import CreateUserController
+from core.pkg.user_system.infrastructure.driving.api.list_users_controller import ListUsersController
+from core.pkg.user_system.infrastructure.driving.api.get_user_controller import GetUserController
+from core.pkg.user_system.infrastructure.driving.api.create_user_controller import CreateUserController
 
-from core.pkg.gamification_system.infrastructure.driving.api.mission.list_active_missions_controller import ListActiveMissionsController
-from core.pkg.gamification_system.infrastructure.driving.api.mission.get_mission_controller import GetMissionController
-from core.pkg.gamification_system.infrastructure.driving.api.mission.create_mission_controller import CreateMissionController
-from core.pkg.gamification_system.infrastructure.driving.api.mission.complete_mission_controller import CompleteMissionController
+from core.pkg.mission_system.infrastructure.driving.api.list_active_missions_controller import ListActiveMissionsController
+from core.pkg.mission_system.infrastructure.driving.api.get_mission_controller import GetMissionController
+from core.pkg.mission_system.infrastructure.driving.api.create_mission_controller import CreateMissionController
+from core.pkg.mission_system.infrastructure.driving.api.complete_mission_controller import CompleteMissionController
 
-from core.pkg.gamification_system.infrastructure.driving.api.reward.list_rewards_controller import ListRewardsController
-from core.pkg.gamification_system.infrastructure.driving.api.reward.get_reward_controller import GetRewardController
-from core.pkg.gamification_system.infrastructure.driving.api.reward.create_reward_controller import CreateRewardController
-from core.pkg.gamification_system.infrastructure.driving.api.reward.purchase_reward_controller import PurchaseRewardController
+from core.pkg.reward_system.infrastructure.driving.api.list_rewards_controller import ListRewardsController
+from core.pkg.reward_system.infrastructure.driving.api.get_reward_controller import GetRewardController
+from core.pkg.reward_system.infrastructure.driving.api.create_reward_controller import CreateRewardController
+from core.pkg.reward_system.infrastructure.driving.api.purchase_reward_controller import PurchaseRewardController
 
-from core.pkg.gamification_system.infrastructure.driving.api.health.health_check_controller import HealthCheckController
+from core.pkg.shared.infrastructure.driving.api.health_check_controller import HealthCheckController
 
 # ─────────────────────────────────────────────────────────────────
 # 1. Instantiate repositories (in-memory for now)
