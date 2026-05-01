@@ -47,11 +47,6 @@ Experimental verification was conducted using `curl` to validate the following f
   - Verified automatic level-up logic based on XP thresholds.
   - Confirmed duplicate completion prevention (409 Conflict).
 
-## 5. Next Steps
-- Implement persistent storage using a real database (e.g., PostgreSQL).
-- Add automated unit and integration tests as per the implementation plan.
-- Transition to Phase 2: Asynchronous processing and event-driven communication.
-
 
 ## To - Dos before further implementation
 - Remove non-essential comments from all source code
