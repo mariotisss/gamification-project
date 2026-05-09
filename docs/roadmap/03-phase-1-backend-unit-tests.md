@@ -92,12 +92,12 @@ This keeps the actual test functions short and focused on the assertion they car
 
 The suite has **90 unit tests**, all green:
 
-| System            | Tests | Layers covered                                                      |
-| ----------------- | ----- | ------------------------------------------------------------------- |
-| `mission_system`  | 33    | entity, exception, service, in-memory repo, 4 controllers            |
-| `reward_system`   | 24    | entity, exception, service, in-memory repo, 4 controllers            |
-| `user_system`     | 24    | entity (full business logic), service, in-memory repo, 3 controllers |
-| `shared`          | 4     | `EntityNotFoundError`, health check controller                       |
+| System           | Tests | Layers covered                                                       |
+| ---------------- | ----- | -------------------------------------------------------------------- |
+| `mission_system` | 33    | entity, exception, service, in-memory repo, 4 controllers            |
+| `reward_system`  | 24    | entity, exception, service, in-memory repo, 4 controllers            |
+| `user_system`    | 24    | entity (full business logic), service, in-memory repo, 3 controllers |
+| `shared`         | 4     | `EntityNotFoundError`, health check controller                       |
 
 `MissionCompletion` has no behavior of its own and is exercised transitively through `MissionService` tests, so it does not need a dedicated entity test.
 
