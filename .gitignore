@@ -25,3 +25,8 @@ celerybeat.pid
 
 # VSCode
 .vscode/
+
+# Claude
+.claude/
+.agents/
+CLAUDE.md
