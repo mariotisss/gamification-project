@@ -1,0 +1,32 @@
+meta {
+  name: Create User
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/users
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "alice",
+    "email": "alice@example.com"
+  }
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setEnvVar("user_id", res.body.id);
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.username: eq alice
+  res.body.xp: eq 0
+  res.body.level: eq 1
+  res.body.dev_coins: eq 0
+}

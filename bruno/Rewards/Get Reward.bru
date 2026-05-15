@@ -1,0 +1,16 @@
+meta {
+  name: Get Reward
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/rewards/{{reward_id}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: eq {{reward_id}}
+}

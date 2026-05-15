@@ -1,0 +1,32 @@
+meta {
+  name: Create Reward
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/rewards
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Coffee mug",
+    "description": "Branded company mug",
+    "cost": 50,
+    "reward_type": "merch"
+  }
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setEnvVar("reward_id", res.body.id);
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.name: eq Coffee mug
+  res.body.cost: eq 50
+}

@@ -1,0 +1,21 @@
+meta {
+  name: Complete Mission - Duplicate (409)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{base_url}}/missions/{{mission_id}}/complete
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "user_id": "{{user_id}}"
+  }
+}
+
+assert {
+  res.status: eq 409
+}

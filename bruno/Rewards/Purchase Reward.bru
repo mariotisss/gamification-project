@@ -1,0 +1,22 @@
+meta {
+  name: Purchase Reward
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/rewards/{{reward_id}}/purchase
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "user_id": "{{user_id}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: eq {{reward_id}}
+}
