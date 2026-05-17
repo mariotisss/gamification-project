@@ -1,6 +1,8 @@
 import logging
+from collections.abc import Callable
 from uuid import UUID
-from fastapi import FastAPI
+
+from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 
 from core.pkg.reward_system.domain.entities.reward import Reward
@@ -10,23 +12,27 @@ from core.pkg.shared.domain.exceptions.entity_not_found import EntityNotFoundErr
 
 logger = logging.getLogger(__name__)
 
+
 class GetRewardController:
 
     def __init__(
         self,
         app: FastAPI,
-        use_case: RewardUseCases,
+        use_case_factory: Callable[..., RewardUseCases],
         base_path: str,
     ) -> None:
         self.app = app
-        self.use_case = use_case
+        self.use_case_factory = use_case_factory
         self.base_path = base_path
 
     def register_routes(self) -> None:
         @self.app.get(path=f"{self.base_path}/rewards/{{reward_id}}")
-        def handle_get_reward(reward_id: UUID) -> JSONResponse:
+        def handle_get_reward(
+            reward_id: UUID,
+            use_case: RewardUseCases = Depends(dependency=self.use_case_factory),
+        ) -> JSONResponse:
             try:
-                reward = self.use_case.get_reward(reward_id=reward_id)
+                reward = use_case.get_reward(reward_id=reward_id)
                 response_data = build_response(reward=reward).model_dump(mode="json")
                 return JSONResponse(status_code=200, content=response_data)
             except EntityNotFoundError as e:

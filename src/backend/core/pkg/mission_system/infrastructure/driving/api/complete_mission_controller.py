@@ -1,33 +1,44 @@
 import logging
+from collections.abc import Callable
 from uuid import UUID
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse
-from pydantic import ValidationError
 
-from core.pkg.mission_system.domain.exceptions.mission_already_completed import MissionAlreadyCompletedError
+from fastapi import Depends, FastAPI
+from fastapi.responses import JSONResponse
+
+from core.pkg.mission_system.domain.exceptions.mission_already_completed import (
+    MissionAlreadyCompletedError,
+)
 from core.pkg.mission_system.domain.ports.driving.mission_use_cases import MissionUseCases
-from core.pkg.mission_system.infrastructure.driving.dtos.mission_dtos import CompleteMissionRequest, MissionCompletionResponse
+from core.pkg.mission_system.infrastructure.driving.dtos.mission_dtos import (
+    CompleteMissionRequest,
+    MissionCompletionResponse,
+)
 from core.pkg.shared.domain.exceptions.entity_not_found import EntityNotFoundError
 
 logger = logging.getLogger(__name__)
+
 
 class CompleteMissionController:
 
     def __init__(
         self,
         app: FastAPI,
-        use_case: MissionUseCases,
+        use_case_factory: Callable[..., MissionUseCases],
         base_path: str,
     ) -> None:
         self.app = app
-        self.use_case = use_case
+        self.use_case_factory = use_case_factory
         self.base_path = base_path
 
     def register_routes(self) -> None:
         @self.app.post(path=f"{self.base_path}/missions/{{mission_id}}/complete")
-        def handle_complete_mission(mission_id: UUID, body: CompleteMissionRequest) -> JSONResponse:
+        def handle_complete_mission(
+            mission_id: UUID,
+            body: CompleteMissionRequest,
+            use_case: MissionUseCases = Depends(dependency=self.use_case_factory),
+        ) -> JSONResponse:
             try:
-                completion = self.use_case.complete_mission(
+                completion = use_case.complete_mission(
                     user_id=body.user_id,
                     mission_id=mission_id,
                 )

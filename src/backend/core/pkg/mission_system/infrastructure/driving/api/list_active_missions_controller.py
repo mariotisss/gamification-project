@@ -1,5 +1,7 @@
 import logging
-from fastapi import FastAPI
+from collections.abc import Callable
+
+from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 
 from core.pkg.mission_system.domain.entities.mission import Mission
@@ -8,23 +10,26 @@ from core.pkg.mission_system.infrastructure.driving.dtos.mission_dtos import Mis
 
 logger = logging.getLogger(__name__)
 
+
 class ListActiveMissionsController:
 
     def __init__(
         self,
         app: FastAPI,
-        use_case: MissionUseCases,
+        use_case_factory: Callable[..., MissionUseCases],
         base_path: str,
     ) -> None:
         self.app = app
-        self.use_case = use_case
+        self.use_case_factory = use_case_factory
         self.base_path = base_path
 
     def register_routes(self) -> None:
         @self.app.get(path=f"{self.base_path}/missions")
-        def handle_list_active_missions() -> JSONResponse:
+        def handle_list_active_missions(
+            use_case: MissionUseCases = Depends(dependency=self.use_case_factory),
+        ) -> JSONResponse:
             try:
-                missions = self.use_case.list_active_missions()
+                missions = use_case.list_active_missions()
                 response_data = [
                     build_response(mission=m).model_dump(mode="json")
                     for m in missions

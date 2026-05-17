@@ -1,31 +1,39 @@
 import logging
-from fastapi import FastAPI
+from collections.abc import Callable
+
+from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
-from pydantic import ValidationError
 
 from core.pkg.reward_system.domain.entities.reward import Reward
 from core.pkg.reward_system.domain.ports.driving.reward_use_cases import RewardUseCases
-from core.pkg.reward_system.infrastructure.driving.dtos.reward_dtos import CreateRewardRequest, RewardResponse
+from core.pkg.reward_system.infrastructure.driving.dtos.reward_dtos import (
+    CreateRewardRequest,
+    RewardResponse,
+)
 
 logger = logging.getLogger(__name__)
+
 
 class CreateRewardController:
 
     def __init__(
         self,
         app: FastAPI,
-        use_case: RewardUseCases,
+        use_case_factory: Callable[..., RewardUseCases],
         base_path: str,
     ) -> None:
         self.app = app
-        self.use_case = use_case
+        self.use_case_factory = use_case_factory
         self.base_path = base_path
 
     def register_routes(self) -> None:
         @self.app.post(path=f"{self.base_path}/rewards")
-        def handle_create_reward(body: CreateRewardRequest) -> JSONResponse:
+        def handle_create_reward(
+            body: CreateRewardRequest,
+            use_case: RewardUseCases = Depends(dependency=self.use_case_factory),
+        ) -> JSONResponse:
             try:
-                reward = self.use_case.create_reward(
+                reward = use_case.create_reward(
                     name=body.name,
                     description=body.description,
                     cost=body.cost,

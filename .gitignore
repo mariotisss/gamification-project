@@ -3,6 +3,12 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+# setuptools / build artifacts
+*.egg-info/
+*.egg
+build/
+dist/
+
 # Environments
 .env
 .envrc
@@ -30,3 +36,32 @@ celerybeat.pid
 .claude/
 .agents/
 CLAUDE.md
+
+# Coverage reports
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Type-checker caches
+.mypy_cache/
+.pyright/
+.pytype/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Editors / IDEs
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Local Docker overrides (for personal customization, not committed)
+docker-compose.override.yml
+docker-compose.override.yaml

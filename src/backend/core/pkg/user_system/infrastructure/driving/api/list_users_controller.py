@@ -1,6 +1,7 @@
 import logging
-from typing import Any
-from fastapi import FastAPI
+from collections.abc import Callable
+
+from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 
 from core.pkg.user_system.domain.entities.user import User
@@ -9,23 +10,26 @@ from core.pkg.user_system.infrastructure.driving.dtos.user_dtos import UserRespo
 
 logger = logging.getLogger(__name__)
 
+
 class ListUsersController:
 
     def __init__(
         self,
         app: FastAPI,
-        use_case: UserUseCases,
+        use_case_factory: Callable[..., UserUseCases],
         base_path: str,
     ) -> None:
         self.app = app
-        self.use_case = use_case
+        self.use_case_factory = use_case_factory
         self.base_path = base_path
 
     def register_routes(self) -> None:
         @self.app.get(path=f"{self.base_path}/users")
-        def handle_list_users() -> JSONResponse:
+        def handle_list_users(
+            use_case: UserUseCases = Depends(dependency=self.use_case_factory),
+        ) -> JSONResponse:
             try:
-                users = self.use_case.list_users()
+                users = use_case.list_users()
                 response_data = [
                     build_response(user=u).model_dump(mode="json")
                     for u in users

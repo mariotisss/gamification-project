@@ -1,31 +1,39 @@
 import logging
-from fastapi import FastAPI
+from collections.abc import Callable
+
+from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
-from pydantic import ValidationError
 
 from core.pkg.mission_system.domain.entities.mission import Mission
 from core.pkg.mission_system.domain.ports.driving.mission_use_cases import MissionUseCases
-from core.pkg.mission_system.infrastructure.driving.dtos.mission_dtos import CreateMissionRequest, MissionResponse
+from core.pkg.mission_system.infrastructure.driving.dtos.mission_dtos import (
+    CreateMissionRequest,
+    MissionResponse,
+)
 
 logger = logging.getLogger(__name__)
+
 
 class CreateMissionController:
 
     def __init__(
         self,
         app: FastAPI,
-        use_case: MissionUseCases,
+        use_case_factory: Callable[..., MissionUseCases],
         base_path: str,
     ) -> None:
         self.app = app
-        self.use_case = use_case
+        self.use_case_factory = use_case_factory
         self.base_path = base_path
 
     def register_routes(self) -> None:
         @self.app.post(path=f"{self.base_path}/missions")
-        def handle_create_mission(body: CreateMissionRequest) -> JSONResponse:
+        def handle_create_mission(
+            body: CreateMissionRequest,
+            use_case: MissionUseCases = Depends(dependency=self.use_case_factory),
+        ) -> JSONResponse:
             try:
-                mission = self.use_case.create_mission(
+                mission = use_case.create_mission(
                     title=body.title,
                     description=body.description,
                     xp_reward=body.xp_reward,

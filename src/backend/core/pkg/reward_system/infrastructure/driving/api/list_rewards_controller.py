@@ -1,5 +1,7 @@
 import logging
-from fastapi import FastAPI
+from collections.abc import Callable
+
+from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 
 from core.pkg.reward_system.domain.entities.reward import Reward
@@ -8,23 +10,26 @@ from core.pkg.reward_system.infrastructure.driving.dtos.reward_dtos import Rewar
 
 logger = logging.getLogger(__name__)
 
+
 class ListRewardsController:
 
     def __init__(
         self,
         app: FastAPI,
-        use_case: RewardUseCases,
+        use_case_factory: Callable[..., RewardUseCases],
         base_path: str,
     ) -> None:
         self.app = app
-        self.use_case = use_case
+        self.use_case_factory = use_case_factory
         self.base_path = base_path
 
     def register_routes(self) -> None:
         @self.app.get(path=f"{self.base_path}/rewards")
-        def handle_list_rewards() -> JSONResponse:
+        def handle_list_rewards(
+            use_case: RewardUseCases = Depends(dependency=self.use_case_factory),
+        ) -> JSONResponse:
             try:
-                rewards = self.use_case.list_rewards()
+                rewards = use_case.list_rewards()
                 response_data = [
                     build_response(reward=r).model_dump(mode="json")
                     for r in rewards

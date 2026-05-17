@@ -28,7 +28,7 @@ def client(use_case: Mock) -> TestClient:
     app = FastAPI()
     CompleteMissionController(
         app=app,
-        use_case=use_case,
+        use_case_factory=lambda: use_case,
         base_path="/api",
     ).register_routes()
     return TestClient(app=app)
