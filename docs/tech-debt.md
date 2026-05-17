@@ -11,15 +11,11 @@ Severity legend:
 
 ## 🔴 Critical
 
-### 1. Hardcoded database credentials in defaults
+### 1. ~~Hardcoded database credentials in defaults~~ ✅ Resolved (2026-05-17)
 
 **Where:** `src/backend/core/infrastructure/persistence/settings.py`
 
-`DatabaseSettings` ships with default values `host=localhost`, `user=gamif`, `password=gamif`, `name=gamif`. These match `docker-compose.yml` so local dev "just works" without a `.env` file — but it also means the app will boot with these defaults anywhere the env isn't overridden.
-
-**Risk:** If this is ever deployed to a reachable network without `GAMIF_DB_*` env vars set, the database is wide open with predictable credentials.
-
-**Fix:** Remove the default password (and ideally user/name). Make them required env values so missing config raises on startup instead of silently using a known-bad default.
+`DatabaseSettings` no longer ships defaults for `user`, `password`, or `name`. Missing config now raises a `pydantic.ValidationError` on startup. Local development relies on a gitignored `.env` at the repo root (template: `.env.example`); `DatabaseSettings` resolves the file path relative to the source tree, so it works from any CWD. Only the non-secret network locators (`host=localhost`, `port=5432`) and operational toggles (`echo`, `pool_size`, `max_overflow`) keep defaults.
 
 ---
 

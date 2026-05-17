@@ -75,19 +75,28 @@ Existing constraints in `requirements.txt` (which is the source of truth for ver
 
 ## 4. Configuration
 
-`DatabaseSettings` uses `pydantic-settings` with the `GAMIF_DB_` env prefix and reads an optional `.env` file. Defaults match `docker-compose.yml`, so local development works out of the box without a `.env`:
+`DatabaseSettings` uses `pydantic-settings` with the `GAMIF_DB_` env prefix. Credentials (`user`, `password`, `name`) have **no defaults** — the app refuses to start if they are missing, so a misconfigured deploy fails fast instead of silently using a known-bad value:
 
 ```python
-host: str = "localhost"
-port: int = 5432
-user: str = "gamif"
-password: str = "gamif"
-name: str = "gamif"
+host: str = "localhost"        # non-secret locator — kept as default
+port: int = 5432                # non-secret locator — kept as default
+user: str                       # required
+password: str                   # required
+name: str                       # required
+echo: bool = False
+pool_size: int = 5
+max_overflow: int = 10
 ```
 
-A `docker-compose.yml` at the repo root brings up `postgres:16` with a healthcheck, and `.env.example` documents the overridable variables for environments that need them.
+The settings object resolves its `.env` file from the repo root using a path computed from the source file itself, so it loads consistently regardless of the process's working directory (`alembic`, `uvicorn`, `pytest` all see the same `.env`).
 
-> Defaults are convenient but not safe outside local dev — see `docs/tech-debt.md` item #1.
+For local development the repo ships:
+
+- `.env.example` at the repo root — the template (committed).
+- `.env` at the repo root — gitignored; populate it from the template to provide credentials.
+- `docker-compose.yml` at the repo root — brings up `postgres:16` with a healthcheck matching the credentials in `.env`.
+
+> Item #1 in `docs/tech-debt.md` (default credentials) is resolved by this change.
 
 ## 5. Engine and Session
 
