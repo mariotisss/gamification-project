@@ -34,47 +34,29 @@ Anyone who can reach the HTTP port can:
 
 ---
 
-### 3. Integration tests bypass Alembic
+### 3. ~~Integration tests bypass Alembic~~ ✅ Resolved (2026-05-17)
 
 **Where:** `src/backend/tests/integration/conftest.py`
 
-The `engine` fixture calls `Base.metadata.create_all(bind=engine)` to build the schema directly from the ORM models. The actual migration file (`alembic/versions/0001_initial_schema.py`) is **never exercised by tests**.
-
-**Risk:** A wrong, missing, or out-of-sync migration would pass CI and only fail in production when `alembic upgrade head` runs against a real DB.
-
-**Fix:** Replace `create_all` with `alembic.command.upgrade(cfg, "head")` pointing at the testcontainer URL. Tests then validate the migration, not just the models.
+The `engine` fixture now runs `alembic.command.upgrade(config, "head")` against the testcontainer URL instead of `Base.metadata.create_all`. Tests exercise the same migration files that production runs, so a broken or missing migration breaks CI rather than surviving until deploy.
 
 ---
 
-### 4. No migration version check at startup
+### 4. ~~No migration version check at startup~~ ✅ Resolved (2026-05-17)
 
-**Where:** `src/backend/main.py`
+**Where:** `src/backend/main.py`, `src/backend/core/infrastructure/persistence/migration_check.py`
 
-The API starts and serves traffic regardless of the DB schema state. If the code expects migration `0005` but the DB is at `0003`, the app boots and breaks on the first query.
-
-**Risk:** Deploys that forget `alembic upgrade head` produce confusing runtime errors instead of failing fast.
-
-**Fix:** On startup, compare `alembic current` to `alembic heads`. If they differ, refuse to serve (or log a loud warning, depending on policy).
+On startup, FastAPI's `lifespan` calls `assert_schema_up_to_date(engine)`, which compares `MigrationContext.get_current_revision()` against `ScriptDirectory.get_current_head()`. A mismatch raises `SchemaOutOfDateError` and the app refuses to serve traffic — the developer sees a clear "run `alembic upgrade head`" message instead of confusing runtime errors on the first query.
 
 ---
 
-### 5. Overly broad `except Exception` → 500
+### 5. ~~Overly broad `except Exception` → 500~~ ✅ Resolved (2026-05-17) — partial
 
-**Where:** Every controller. Example: `create_user_controller.py`.
+**Where:** `create_user_controller.py`, `postgres_user_repository.py`.
 
-```python
-except Exception as e:
-    logger.error(f"Error creating user: {e}")
-    return JSONResponse(status_code=500, ...)
-```
+A new domain exception `UserAlreadyExistsError` was introduced. `PostgresUserRepository.save` now catches `IntegrityError` (raised when the `users.username` or `users.email` unique constraint is violated) and translates it into the domain exception — race-safe via the DB constraint, same pattern as `MissionAlreadyCompletedError` on `mission_completions`. `CreateUserController` catches `UserAlreadyExistsError` → 409, before falling through to the generic `except Exception` → 500. Duplicate signups now produce a clean 409 with a meaningful message.
 
-A real bug and a normal business condition (e.g. `IntegrityError` from a duplicate email/username) both become opaque 500s, obscuring root cause and confusing clients.
-
-**Risk:** Duplicate-email signups look like server errors. Real 500s get lost in the noise.
-
-**Fix:** Narrow the catches. At minimum:
-- Map `sqlalchemy.exc.IntegrityError` on user creation → 409 with a clean message.
-- Let true unexpected exceptions propagate to a FastAPI exception handler that logs the full traceback and returns 500.
+> **Scope note:** the broad `except Exception → 500` is still present in all controllers as a last-line defense. It's no longer hiding the most common business case (duplicate user), but a cleaner approach — global FastAPI exception handler + removal of the per-controller broad catch — is still open work.
 
 ---
 
@@ -177,10 +159,10 @@ Standard library logging with f-strings. No correlation IDs, no JSON output, no 
 ## Suggested order of attack
 
 Quick wins (an afternoon each):
-1. Item #1 — remove default password.
-2. Item #3 — integration tests run real migrations.
-3. Item #4 — startup migration check.
-4. Item #5 — narrow `except Exception`, map `IntegrityError`.
+1. ~~Item #1 — remove default password.~~ ✅ Done 2026-05-17
+2. ~~Item #3 — integration tests run real migrations.~~ ✅ Done 2026-05-17
+3. ~~Item #4 — startup migration check.~~ ✅ Done 2026-05-17
+4. ~~Item #5 — narrow `except Exception`, map `IntegrityError`.~~ ✅ Done 2026-05-17 (partial — broad catch still present as fallback)
 
 Bigger pieces (each its own PR with design discussion):
 5. Item #2 — auth model.

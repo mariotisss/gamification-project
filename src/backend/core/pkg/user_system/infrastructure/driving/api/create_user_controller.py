@@ -5,6 +5,7 @@ from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 
 from core.pkg.user_system.domain.entities.user import User
+from core.pkg.user_system.domain.exceptions.user_already_exists import UserAlreadyExistsError
 from core.pkg.user_system.domain.ports.driving.user_use_cases import UserUseCases
 from core.pkg.user_system.infrastructure.driving.dtos.user_dtos import (
     CreateUserRequest,
@@ -36,6 +37,8 @@ class CreateUserController:
                 user = use_case.create_user(username=body.username, email=body.email)
                 response_data = build_response(user=user).model_dump(mode="json")
                 return JSONResponse(status_code=201, content=response_data)
+            except UserAlreadyExistsError as e:
+                return JSONResponse(status_code=409, content={"detail": str(e)})
             except Exception as e:
                 logger.error(f"Error creating user: {e}")
                 return JSONResponse(status_code=500, content={"detail": "Internal server error"})

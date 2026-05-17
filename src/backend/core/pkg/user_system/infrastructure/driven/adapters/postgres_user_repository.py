@@ -3,9 +3,11 @@ from __future__ import annotations
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from core.pkg.user_system.domain.entities.user import User
+from core.pkg.user_system.domain.exceptions.user_already_exists import UserAlreadyExistsError
 from core.pkg.user_system.domain.ports.driven.user_repository import UserRepository
 from core.pkg.user_system.infrastructure.driven.persistence.models.user_model import UserModel
 
@@ -53,7 +55,10 @@ class PostgresUserRepository(UserRepository):
     def save(self, user: User) -> User:
         model = _to_model(entity=user)
         self._session.add(instance=model)
-        self._session.flush()
+        try:
+            self._session.flush()
+        except IntegrityError as exc:
+            raise UserAlreadyExistsError(username=user.username, email=user.email) from exc
         return user
 
     def update(self, user: User) -> User:

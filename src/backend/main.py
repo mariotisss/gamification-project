@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 import uvicorn
 from fastapi import Depends, FastAPI
 from sqlalchemy.orm import Session
 
 from core.infrastructure.persistence.database import build_engine, build_session_factory
+from core.infrastructure.persistence.migration_check import assert_schema_up_to_date
 from core.infrastructure.persistence.session_dependency import SessionProvider
 from core.infrastructure.persistence.settings import DatabaseSettings
 
@@ -103,10 +107,17 @@ def get_reward_service(
 # ─────────────────────────────────────────────────────────────────
 # 3. Create the FastAPI application
 # ─────────────────────────────────────────────────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    assert_schema_up_to_date(engine=engine)
+    yield
+
+
 app = FastAPI(
     title="Gamification API",
     description="Developer productivity gamification platform — Phase 1",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 

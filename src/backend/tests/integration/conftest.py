@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
+from alembic import command
+from alembic.config import Config
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 from testcontainers.postgres import PostgresContainer
@@ -15,6 +18,11 @@ import core.pkg.user_system.infrastructure.driven.persistence.models.user_model 
 import core.pkg.mission_system.infrastructure.driven.persistence.models.mission_model  # noqa: F401
 import core.pkg.mission_system.infrastructure.driven.persistence.models.mission_completion_model  # noqa: F401
 import core.pkg.reward_system.infrastructure.driven.persistence.models.reward_model  # noqa: F401
+
+
+_BACKEND_DIR = Path(__file__).resolve().parents[2]
+_ALEMBIC_INI = _BACKEND_DIR / "alembic.ini"
+_ALEMBIC_SCRIPT_LOCATION = _BACKEND_DIR / "alembic"
 
 
 @pytest.fixture(scope="session")
@@ -33,7 +41,12 @@ def engine(postgres_container: PostgresContainer) -> Iterator[Engine]:
         name=postgres_container.dbname,
     )
     engine = build_engine(settings=settings)
-    Base.metadata.create_all(bind=engine)
+
+    alembic_cfg = Config(file_=str(_ALEMBIC_INI))
+    alembic_cfg.set_main_option(name="script_location", value=str(_ALEMBIC_SCRIPT_LOCATION))
+    alembic_cfg.set_main_option(name="sqlalchemy.url", value=settings.url)
+    command.upgrade(config=alembic_cfg, revision="head")
+
     yield engine
     engine.dispose()
 
