@@ -13,6 +13,7 @@ from core.pkg.mission_system.infrastructure.driven.adapters.postgres_mission_rep
     PostgresMissionRepository,
 )
 from core.pkg.shared.domain.entities.mission_completion import MissionCompletion
+from core.pkg.shared.domain.exceptions.entity_not_found import EntityNotFoundError
 from core.pkg.user_system.domain.entities.user import User
 from core.pkg.user_system.infrastructure.driven.adapters.postgres_user_repository import (
     PostgresUserRepository,
@@ -31,7 +32,6 @@ def test_given_saved_mission_when_get_by_id_then_returns_same_mission(session: S
 
     result = repo.get_by_id(mission_id=mission.id)
 
-    assert result is not None
     assert result.title == "Refactor module"
 
 
@@ -97,9 +97,14 @@ def test_given_duplicate_completion_when_save_then_raises_already_completed(
         )
 
 
-def test_given_unknown_mission_id_when_get_by_id_then_returns_none(session: Session) -> None:
+def test_given_unknown_mission_id_when_get_by_id_then_raises_entity_not_found(
+    session: Session,
+) -> None:
     repo = PostgresMissionRepository(session=session)
+    missing_id = uuid4()
 
-    result = repo.get_by_id(mission_id=uuid4())
+    with pytest.raises(expected_exception=EntityNotFoundError) as exc:
+        repo.get_by_id(mission_id=missing_id)
 
-    assert result is None
+    assert exc.value.entity_type == "Mission"
+    assert exc.value.entity_id == missing_id

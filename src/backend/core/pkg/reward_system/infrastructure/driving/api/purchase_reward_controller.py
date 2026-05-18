@@ -1,7 +1,7 @@
-import logging
 from collections.abc import Callable
 from uuid import UUID
 
+import structlog
 from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 
@@ -13,8 +13,11 @@ from core.pkg.reward_system.infrastructure.driving.dtos.reward_dtos import (
     RewardResponse,
 )
 from core.pkg.shared.domain.exceptions.entity_not_found import EntityNotFoundError
+from core.pkg.user_system.domain.exceptions.concurrent_user_update import (
+    ConcurrentUserUpdateError,
+)
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class PurchaseRewardController:
@@ -36,19 +39,59 @@ class PurchaseRewardController:
             body: PurchaseRewardRequest,
             use_case: RewardUseCases = Depends(dependency=self.use_case_factory),
         ) -> JSONResponse:
+            logger.info(
+                "incoming_purchase_reward_request",
+                user_id=str(body.user_id),
+                reward_id=str(reward_id),
+            )
             try:
                 reward = use_case.purchase_reward(
                     user_id=body.user_id,
                     reward_id=reward_id,
                 )
                 response_data = build_response(reward=reward).model_dump(mode="json")
+                logger.info(
+                    "outgoing_purchase_reward_response",
+                    status_code=200,
+                    reward_id=str(reward_id),
+                )
                 return JSONResponse(status_code=200, content=response_data)
             except EntityNotFoundError as e:
+                logger.error(
+                    "purchase_reward_not_found",
+                    user_id=str(body.user_id),
+                    reward_id=str(reward_id),
+                    exc_type=type(e).__name__,
+                    message=str(e),
+                )
                 return JSONResponse(status_code=404, content={"detail": str(e)})
             except InsufficientCoinsError as e:
+                logger.error(
+                    "purchase_reward_insufficient_coins",
+                    user_id=str(body.user_id),
+                    reward_id=str(reward_id),
+                    exc_type=type(e).__name__,
+                    message=str(e),
+                )
                 return JSONResponse(status_code=402, content={"detail": str(e)})
+            except ConcurrentUserUpdateError as e:
+                logger.error(
+                    "purchase_reward_concurrent_user_update",
+                    user_id=str(body.user_id),
+                    reward_id=str(reward_id),
+                    exc_type=type(e).__name__,
+                    message=str(e),
+                )
+                return JSONResponse(status_code=409, content={"detail": str(e)})
             except Exception as e:
-                logger.error(f"Error purchasing reward: {e}")
+                logger.error(
+                    "purchase_reward_unhandled_error",
+                    user_id=str(body.user_id),
+                    reward_id=str(reward_id),
+                    exc_type=type(e).__name__,
+                    message=str(e),
+                    exc_info=True,
+                )
                 return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
         def build_response(reward: Reward) -> RewardResponse:

@@ -6,7 +6,6 @@ from core.pkg.reward_system.domain.entities.reward import Reward
 from core.pkg.reward_system.domain.exceptions.insufficient_coins import InsufficientCoinsError
 from core.pkg.reward_system.domain.ports.driven.reward_repository import RewardRepository
 from core.pkg.reward_system.domain.ports.driving.reward_use_cases import RewardUseCases
-from core.pkg.shared.domain.exceptions.entity_not_found import EntityNotFoundError
 from core.pkg.user_system.domain.ports.driven.user_repository import UserRepository
 
 
@@ -20,10 +19,7 @@ class RewardService(RewardUseCases):
         self._user_repo = user_repository
 
     def get_reward(self, reward_id: UUID) -> Reward:
-        reward = self._reward_repo.get_by_id(reward_id=reward_id)
-        if reward is None:
-            raise EntityNotFoundError(entity_type="Reward", entity_id=reward_id)
-        return reward
+        return self._reward_repo.get_by_id(reward_id=reward_id)
 
     def list_rewards(self) -> list[Reward]:
         return self._reward_repo.get_all()
@@ -45,12 +41,7 @@ class RewardService(RewardUseCases):
 
     def purchase_reward(self, user_id: UUID, reward_id: UUID) -> Reward:
         user = self._user_repo.get_by_id(user_id=user_id)
-        if user is None:
-            raise EntityNotFoundError(entity_type="User", entity_id=user_id)
-
         reward = self._reward_repo.get_by_id(reward_id=reward_id)
-        if reward is None:
-            raise EntityNotFoundError(entity_type="Reward", entity_id=reward_id)
 
         if user.dev_coins < reward.cost:
             raise InsufficientCoinsError(user_id=user_id, required=reward.cost, available=user.dev_coins)

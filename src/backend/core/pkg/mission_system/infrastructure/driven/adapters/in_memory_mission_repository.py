@@ -5,6 +5,7 @@ from uuid import UUID
 from core.pkg.mission_system.domain.entities.mission import Mission
 from core.pkg.mission_system.domain.ports.driven.mission_repository import MissionRepository
 from core.pkg.shared.domain.entities.mission_completion import MissionCompletion
+from core.pkg.shared.domain.exceptions.entity_not_found import EntityNotFoundError
 
 
 class InMemoryMissionRepository(MissionRepository):
@@ -12,8 +13,11 @@ class InMemoryMissionRepository(MissionRepository):
         self._missions: dict[UUID, Mission] = {}
         self._completions: list[MissionCompletion] = []
 
-    def get_by_id(self, mission_id: UUID) -> Mission | None:
-        return self._missions.get(mission_id)
+    def get_by_id(self, mission_id: UUID) -> Mission:
+        mission = self._missions.get(mission_id)
+        if mission is None:
+            raise EntityNotFoundError(entity_type="Mission", entity_id=mission_id)
+        return mission
 
     def get_all_active(self) -> list[Mission]:
         return [m for m in self._missions.values() if m.is_active]

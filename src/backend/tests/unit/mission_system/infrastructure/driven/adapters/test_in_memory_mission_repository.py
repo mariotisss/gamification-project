@@ -2,19 +2,25 @@ from __future__ import annotations
 
 from uuid import uuid4
 
+import pytest
+
 from core.pkg.mission_system.domain.entities.mission import Mission
 from core.pkg.mission_system.infrastructure.driven.adapters.in_memory_mission_repository import (
     InMemoryMissionRepository,
 )
 from core.pkg.shared.domain.entities.mission_completion import MissionCompletion
+from core.pkg.shared.domain.exceptions.entity_not_found import EntityNotFoundError
 
 
-def test_given_empty_repo_when_get_by_id_then_returns_none() -> None:
+def test_given_empty_repo_when_get_by_id_then_raises_entity_not_found() -> None:
     repo = InMemoryMissionRepository()
+    missing_id = uuid4()
 
-    result = repo.get_by_id(mission_id=uuid4())
+    with pytest.raises(expected_exception=EntityNotFoundError) as exc:
+        repo.get_by_id(mission_id=missing_id)
 
-    assert result is None
+    assert exc.value.entity_type == "Mission"
+    assert exc.value.entity_id == missing_id
 
 
 def test_given_saved_mission_when_get_by_id_then_returns_same_mission() -> None:

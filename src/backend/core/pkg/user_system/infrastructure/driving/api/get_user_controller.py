@@ -1,7 +1,7 @@
-import logging
 from collections.abc import Callable
 from uuid import UUID
 
+import structlog
 from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 
@@ -10,7 +10,7 @@ from core.pkg.user_system.domain.entities.user import User
 from core.pkg.user_system.domain.ports.driving.user_use_cases import UserUseCases
 from core.pkg.user_system.infrastructure.driving.dtos.user_dtos import UserResponse
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class GetUserController:
@@ -31,14 +31,32 @@ class GetUserController:
             user_id: UUID,
             use_case: UserUseCases = Depends(dependency=self.use_case_factory),
         ) -> JSONResponse:
+            logger.info("incoming_get_user_request", user_id=str(user_id))
             try:
                 user = use_case.get_user(user_id=user_id)
                 response_data = build_response(user=user).model_dump(mode="json")
+                logger.info(
+                    "outgoing_get_user_response",
+                    status_code=200,
+                    user_id=str(user_id),
+                )
                 return JSONResponse(status_code=200, content=response_data)
             except EntityNotFoundError as e:
+                logger.error(
+                    "get_user_not_found",
+                    user_id=str(user_id),
+                    exc_type=type(e).__name__,
+                    message=str(e),
+                )
                 return JSONResponse(status_code=404, content={"detail": str(e)})
             except Exception as e:
-                logger.error(f"Error getting user: {e}")
+                logger.error(
+                    "get_user_unhandled_error",
+                    user_id=str(user_id),
+                    exc_type=type(e).__name__,
+                    message=str(e),
+                    exc_info=True,
+                )
                 return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
         def build_response(user: User) -> UserResponse:

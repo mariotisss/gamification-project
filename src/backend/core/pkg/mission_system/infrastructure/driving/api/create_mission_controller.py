@@ -1,6 +1,6 @@
-import logging
 from collections.abc import Callable
 
+import structlog
 from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 
@@ -11,7 +11,7 @@ from core.pkg.mission_system.infrastructure.driving.dtos.mission_dtos import (
     MissionResponse,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class CreateMissionController:
@@ -32,6 +32,12 @@ class CreateMissionController:
             body: CreateMissionRequest,
             use_case: MissionUseCases = Depends(dependency=self.use_case_factory),
         ) -> JSONResponse:
+            logger.info(
+                "incoming_create_mission_request",
+                title=body.title,
+                xp_reward=body.xp_reward,
+                coin_reward=body.coin_reward,
+            )
             try:
                 mission = use_case.create_mission(
                     title=body.title,
@@ -40,9 +46,19 @@ class CreateMissionController:
                     coin_reward=body.coin_reward,
                 )
                 response_data = build_response(mission=mission).model_dump(mode="json")
+                logger.info(
+                    "outgoing_create_mission_response",
+                    status_code=201,
+                    mission_id=str(mission.id),
+                )
                 return JSONResponse(status_code=201, content=response_data)
             except Exception as e:
-                logger.error(f"Error creating mission: {e}")
+                logger.error(
+                    "create_mission_unhandled_error",
+                    exc_type=type(e).__name__,
+                    message=str(e),
+                    exc_info=True,
+                )
                 return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
         def build_response(mission: Mission) -> MissionResponse:

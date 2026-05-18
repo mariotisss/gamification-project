@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import structlog
 from alembic.config import Config
 from alembic.migration import MigrationContext
 from alembic.script import ScriptDirectory
@@ -10,6 +11,8 @@ from sqlalchemy import Engine
 _BACKEND_DIR = Path(__file__).resolve().parents[3]
 _ALEMBIC_INI = _BACKEND_DIR / "alembic.ini"
 _ALEMBIC_SCRIPT_LOCATION = _BACKEND_DIR / "alembic"
+
+logger = structlog.get_logger(__name__)
 
 
 class SchemaOutOfDateError(RuntimeError):
@@ -34,4 +37,6 @@ def assert_schema_up_to_date(engine: Engine) -> None:
         current = ctx.get_current_revision() or ""
 
     if current != expected:
+        logger.error("schema_out_of_date", current=current, expected=expected)
         raise SchemaOutOfDateError(current=current, expected=expected)
+    logger.info("schema_up_to_date", revision=current)

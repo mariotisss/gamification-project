@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import DateTime, String
+from sqlalchemy import DateTime, Integer, String
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -20,3 +20,6 @@ class UserModel(Base):
     level: Mapped[int] = mapped_column(nullable=False, default=1)
     dev_coins: Mapped[int] = mapped_column(nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    version_id: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    __mapper_args__ = {"version_id_col": version_id}

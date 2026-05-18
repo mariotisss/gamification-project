@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
+import structlog
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -18,6 +19,9 @@ from core.pkg.mission_system.infrastructure.driven.persistence.models.mission_mo
     MissionModel,
 )
 from core.pkg.shared.domain.entities.mission_completion import MissionCompletion
+from core.pkg.shared.domain.exceptions.entity_not_found import EntityNotFoundError
+
+logger = structlog.get_logger(__name__)
 
 
 def _mission_to_domain(model: MissionModel) -> Mission:
@@ -64,34 +68,97 @@ class PostgresMissionRepository(MissionRepository):
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    def get_by_id(self, mission_id: UUID) -> Mission | None:
+    def get_by_id(self, mission_id: UUID) -> Mission:
+        logger.info(
+            "repo_get_by_id_called",
+            repo="PostgresMissionRepository",
+            mission_id=str(mission_id),
+        )
         stmt = select(MissionModel).where(MissionModel.id == mission_id)
         model = self._session.execute(statement=stmt).scalar_one_or_none()
         if model is None:
-            return None
+            logger.error(
+                "repo_entity_not_found",
+                repo="PostgresMissionRepository",
+                op="get_by_id",
+                mission_id=str(mission_id),
+            )
+            raise EntityNotFoundError(entity_type="Mission", entity_id=mission_id)
+        logger.info(
+            "repo_get_by_id_returned",
+            repo="PostgresMissionRepository",
+            mission_id=str(mission_id),
+        )
         return _mission_to_domain(model=model)
 
     def get_all_active(self) -> list[Mission]:
+        logger.info("repo_get_all_active_called", repo="PostgresMissionRepository")
         stmt = select(MissionModel).where(MissionModel.is_active.is_(True))
         models = self._session.execute(statement=stmt).scalars().all()
-        return [_mission_to_domain(model=m) for m in models]
+        missions = [_mission_to_domain(model=m) for m in models]
+        logger.info(
+            "repo_get_all_active_returned",
+            repo="PostgresMissionRepository",
+            count=len(missions),
+        )
+        return missions
 
     def save(self, mission: Mission) -> Mission:
+        logger.info(
+            "repo_save_called",
+            repo="PostgresMissionRepository",
+            mission_id=str(mission.id),
+        )
         self._session.add(instance=_mission_to_model(entity=mission))
         self._session.flush()
+        logger.info(
+            "repo_save_returned",
+            repo="PostgresMissionRepository",
+            mission_id=str(mission.id),
+        )
         return mission
 
     def save_completion(self, completion: MissionCompletion) -> MissionCompletion:
+        logger.info(
+            "repo_save_completion_called",
+            repo="PostgresMissionRepository",
+            user_id=str(completion.user_id),
+            mission_id=str(completion.mission_id),
+        )
         self._session.add(instance=_completion_to_model(entity=completion))
         try:
             self._session.flush()
         except IntegrityError as exc:
+            logger.error(
+                "repo_mission_already_completed",
+                repo="PostgresMissionRepository",
+                op="save_completion",
+                user_id=str(completion.user_id),
+                mission_id=str(completion.mission_id),
+            )
             raise MissionAlreadyCompletedError(
                 user_id=completion.user_id, mission_id=completion.mission_id
             ) from exc
+        logger.info(
+            "repo_save_completion_returned",
+            repo="PostgresMissionRepository",
+            completion_id=str(completion.id),
+        )
         return completion
 
     def get_completions_by_user(self, user_id: UUID) -> list[MissionCompletion]:
+        logger.info(
+            "repo_get_completions_by_user_called",
+            repo="PostgresMissionRepository",
+            user_id=str(user_id),
+        )
         stmt = select(MissionCompletionModel).where(MissionCompletionModel.user_id == user_id)
         models = self._session.execute(statement=stmt).scalars().all()
-        return [_completion_to_domain(model=m) for m in models]
+        completions = [_completion_to_domain(model=m) for m in models]
+        logger.info(
+            "repo_get_completions_by_user_returned",
+            repo="PostgresMissionRepository",
+            user_id=str(user_id),
+            count=len(completions),
+        )
+        return completions

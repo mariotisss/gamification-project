@@ -1,6 +1,6 @@
-import logging
 from collections.abc import Callable
 
+import structlog
 from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 
@@ -12,7 +12,7 @@ from core.pkg.user_system.infrastructure.driving.dtos.user_dtos import (
     UserResponse,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class CreateUserController:
@@ -33,14 +33,36 @@ class CreateUserController:
             body: CreateUserRequest,
             use_case: UserUseCases = Depends(dependency=self.use_case_factory),
         ) -> JSONResponse:
+            logger.info(
+                "incoming_create_user_request",
+                username=body.username,
+                email=body.email,
+            )
             try:
                 user = use_case.create_user(username=body.username, email=body.email)
                 response_data = build_response(user=user).model_dump(mode="json")
+                logger.info(
+                    "outgoing_create_user_response",
+                    status_code=201,
+                    user_id=str(user.id),
+                )
                 return JSONResponse(status_code=201, content=response_data)
             except UserAlreadyExistsError as e:
+                logger.error(
+                    "create_user_already_exists",
+                    username=body.username,
+                    email=body.email,
+                    exc_type=type(e).__name__,
+                    message=str(e),
+                )
                 return JSONResponse(status_code=409, content={"detail": str(e)})
             except Exception as e:
-                logger.error(f"Error creating user: {e}")
+                logger.error(
+                    "create_user_unhandled_error",
+                    exc_type=type(e).__name__,
+                    message=str(e),
+                    exc_info=True,
+                )
                 return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
         def build_response(user: User) -> UserResponse:

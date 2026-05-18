@@ -2,18 +2,24 @@ from __future__ import annotations
 
 from uuid import uuid4
 
+import pytest
+
+from core.pkg.shared.domain.exceptions.entity_not_found import EntityNotFoundError
 from core.pkg.user_system.domain.entities.user import User
 from core.pkg.user_system.infrastructure.driven.adapters.in_memory_user_repository import (
     InMemoryUserRepository,
 )
 
 
-def test_given_empty_repo_when_get_by_id_then_returns_none() -> None:
+def test_given_empty_repo_when_get_by_id_then_raises_entity_not_found() -> None:
     repo = InMemoryUserRepository()
+    missing_id = uuid4()
 
-    result = repo.get_by_id(user_id=uuid4())
+    with pytest.raises(expected_exception=EntityNotFoundError) as exc:
+        repo.get_by_id(user_id=missing_id)
 
-    assert result is None
+    assert exc.value.entity_type == "User"
+    assert exc.value.entity_id == missing_id
 
 
 def test_given_saved_user_when_get_by_id_then_returns_same_user() -> None:
@@ -58,5 +64,4 @@ def test_given_existing_user_when_update_then_overwrites_stored_user() -> None:
     repo.update(user=user)
 
     refreshed = repo.get_by_id(user_id=user.id)
-    assert refreshed is not None
     assert refreshed.xp == 50

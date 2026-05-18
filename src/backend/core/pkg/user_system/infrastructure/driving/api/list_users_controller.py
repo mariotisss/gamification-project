@@ -1,6 +1,6 @@
-import logging
 from collections.abc import Callable
 
+import structlog
 from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 
@@ -8,7 +8,7 @@ from core.pkg.user_system.domain.entities.user import User
 from core.pkg.user_system.domain.ports.driving.user_use_cases import UserUseCases
 from core.pkg.user_system.infrastructure.driving.dtos.user_dtos import UserResponse
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class ListUsersController:
@@ -28,15 +28,26 @@ class ListUsersController:
         def handle_list_users(
             use_case: UserUseCases = Depends(dependency=self.use_case_factory),
         ) -> JSONResponse:
+            logger.info("incoming_list_users_request")
             try:
                 users = use_case.list_users()
                 response_data = [
                     build_response(user=u).model_dump(mode="json")
                     for u in users
                 ]
+                logger.info(
+                    "outgoing_list_users_response",
+                    status_code=200,
+                    count=len(response_data),
+                )
                 return JSONResponse(status_code=200, content=response_data)
             except Exception as e:
-                logger.error(f"Error listing users: {e}")
+                logger.error(
+                    "list_users_unhandled_error",
+                    exc_type=type(e).__name__,
+                    message=str(e),
+                    exc_info=True,
+                )
                 return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
         def build_response(user: User) -> UserResponse:

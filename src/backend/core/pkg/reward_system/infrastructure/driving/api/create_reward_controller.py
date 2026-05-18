@@ -1,6 +1,6 @@
-import logging
 from collections.abc import Callable
 
+import structlog
 from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 
@@ -11,7 +11,7 @@ from core.pkg.reward_system.infrastructure.driving.dtos.reward_dtos import (
     RewardResponse,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class CreateRewardController:
@@ -32,6 +32,12 @@ class CreateRewardController:
             body: CreateRewardRequest,
             use_case: RewardUseCases = Depends(dependency=self.use_case_factory),
         ) -> JSONResponse:
+            logger.info(
+                "incoming_create_reward_request",
+                name=body.name,
+                cost=body.cost,
+                reward_type=body.reward_type,
+            )
             try:
                 reward = use_case.create_reward(
                     name=body.name,
@@ -40,9 +46,19 @@ class CreateRewardController:
                     reward_type=body.reward_type,
                 )
                 response_data = build_response(reward=reward).model_dump(mode="json")
+                logger.info(
+                    "outgoing_create_reward_response",
+                    status_code=201,
+                    reward_id=str(reward.id),
+                )
                 return JSONResponse(status_code=201, content=response_data)
             except Exception as e:
-                logger.error(f"Error creating reward: {e}")
+                logger.error(
+                    "create_reward_unhandled_error",
+                    exc_type=type(e).__name__,
+                    message=str(e),
+                    exc_info=True,
+                )
                 return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
         def build_response(reward: Reward) -> RewardResponse:

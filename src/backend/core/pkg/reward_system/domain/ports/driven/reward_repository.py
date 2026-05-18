@@ -8,7 +8,7 @@ from core.pkg.reward_system.domain.entities.reward import Reward
 
 class RewardRepository(ABC):
     @abstractmethod
-    def get_by_id(self, reward_id: UUID) -> Reward | None:
+    def get_by_id(self, reward_id: UUID) -> Reward:
         pass
 
     @abstractmethod

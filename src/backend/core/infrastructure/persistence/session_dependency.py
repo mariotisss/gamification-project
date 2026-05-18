@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 
+import structlog
 from sqlalchemy.orm import Session, sessionmaker
+
+logger = structlog.get_logger(__name__)
 
 
 class SessionProvider:
@@ -14,7 +17,12 @@ class SessionProvider:
         try:
             yield session
             session.commit()
-        except Exception:
+        except Exception as exc:
+            logger.error(
+                "session_rollback",
+                exc_type=type(exc).__name__,
+                message=str(exc),
+            )
             session.rollback()
             raise
         finally:

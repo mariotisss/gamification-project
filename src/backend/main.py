@@ -1,12 +1,16 @@
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+import uuid
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
+import structlog
 import uvicorn
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
 from sqlalchemy.orm import Session
+from starlette.responses import Response
 
+from core.infrastructure.observability.logging import configure_logging
 from core.infrastructure.persistence.database import build_engine, build_session_factory
 from core.infrastructure.persistence.migration_check import assert_schema_up_to_date
 from core.infrastructure.persistence.session_dependency import SessionProvider
@@ -113,12 +117,28 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     yield
 
 
+configure_logging()
+
 app = FastAPI(
     title="Gamification API",
     description="Developer productivity gamification platform — Phase 1",
     version="0.1.0",
     lifespan=lifespan,
 )
+
+
+@app.middleware("http")
+async def bind_request_context(
+    request: Request,
+    call_next: Callable[[Request], Awaitable[Response]],
+) -> Response:
+    structlog.contextvars.clear_contextvars()
+    structlog.contextvars.bind_contextvars(
+        request_id=str(uuid.uuid4()),
+        method=request.method,
+        path=request.url.path,
+    )
+    return await call_next(request)
 
 
 # ─────────────────────────────────────────────────────────────────

@@ -62,32 +62,19 @@ A new domain exception `UserAlreadyExistsError` was introduced. `PostgresUserRep
 
 ## 🟡 Architectural (plan §13 acknowledges)
 
-### 6. Repository ports return `Entity | None`
+### 6. ~~Repository ports return `Entity | None`~~ ✅ Resolved (2026-05-18)
 
 **Where:** `core/pkg/*/domain/ports/driven/*_repository.py`
 
-`get_by_id` is typed `User | None` (and equivalents). This violates the project's `python-none-usage-restriction.md` rule that external return types must not be `None`.
-
-**Risk:** Inconsistent with project conventions; every caller must None-check.
-
-**Fix (deferred to a dedicated refactor):** Either split into `get_by_id` + `exists`, or introduce an `UNKNOWN` sentinel on the entity, or raise `EntityNotFoundError` at the port level (currently raised at the service level).
+`get_by_id` now returns `Entity` (not `Entity | None`). Both Postgres and in-memory adapters raise `EntityNotFoundError` themselves when a row is missing; services dropped their `if x is None: raise …` guards. Controllers' existing `except EntityNotFoundError → 404` continues to work — the exception is just raised one layer deeper now. Compliant with `python-none-usage-restriction.md`.
 
 ---
 
-### 7. No optimistic locking on `users.dev_coins`
+### 7. ~~No optimistic locking on `users.dev_coins`~~ ✅ Resolved (2026-05-18)
 
 **Where:** `core/pkg/user_system/infrastructure/driven/persistence/models/user_model.py` + `PostgresUserRepository.update`.
 
-Two concurrent `purchase_reward` (or `complete_mission`) calls for the same user can:
-1. Both read `dev_coins=100`.
-2. Both decide they have enough.
-3. Both write the deducted value.
-
-Result: the user "spent" 100 coins but only one deduction landed.
-
-**Risk:** Coin balance corruption under concurrency. The `MissionCompletion` unique constraint covers completion idempotency; **balance has no equivalent backstop.**
-
-**Fix (deferred to Phase 2):** Add a `version int` column, increment it on every update, and use `WHERE id = :id AND version = :v` — retry on zero affected rows.
+`UserModel` now carries a `version_id` column with `__mapper_args__ = {"version_id_col": version_id}`, so SQLAlchemy emits `WHERE id=:id AND version_id=:read_version` on every flush and auto-bumps the counter. Stale writes raise `StaleDataError`, which the adapter translates into a new domain exception `ConcurrentUserUpdateError`. Both `purchase_reward_controller` and `complete_mission_controller` map it to HTTP 409. Alembic migration `0002_add_user_version_id` adds the column. Retry budget intentionally left to the client — left as an explicit follow-up if needed.
 
 ---
 
@@ -131,11 +118,13 @@ Fine for a single uvicorn worker on a laptop. Multiple workers × multiple repli
 
 ---
 
-### 12. No structured logging
+### 12. ~~No structured logging~~ ✅ Resolved (2026-05-18)
 
-Standard library logging with f-strings. No correlation IDs, no JSON output, no log levels per module.
+`structlog` adopted with a minimal pipeline (`merge_contextvars + add_log_level + TimeStamper + ConsoleRenderer`). A FastAPI middleware binds `request_id`, `method`, and `path` as contextvars on every request, so every line in the same request shares the same `request_id`. All 11 controllers + health log INFO on `incoming_*` / `outgoing_*` and ERROR on exception paths; the 3 Postgres adapters log INFO on entry/return and ERROR on translated DB exceptions; `SessionProvider` logs ERROR on rollback; `assert_schema_up_to_date` logs INFO/ERROR.
 
-**Fix:** Adopt `structlog` or similar; add a request-ID middleware.
+> **Known gap:** Uvicorn's own loggers (`uvicorn`, `uvicorn.access`) still use stdlib `logging` with their default formatter, so startup and access lines (`INFO:     Application startup complete.`, `INFO:     127.0.0.1:port - "GET ..."`) appear unstructured alongside our structlog output. Routing stdlib `logging` through structlog (`structlog.stdlib.ProcessorFormatter`) is open work for when the app ships externally.
+
+> **PII note:** `create_user` logs `username` and `email` at INFO. Move to DEBUG before external deployment (see CLAUDE.md).
 
 ---
 
@@ -166,5 +155,6 @@ Quick wins (an afternoon each):
 
 Bigger pieces (each its own PR with design discussion):
 5. Item #2 — auth model.
-6. Item #7 — optimistic locking strategy.
-7. Item #6 — repository port refactor.
+6. ~~Item #7 — optimistic locking strategy.~~ ✅ Done 2026-05-18
+7. ~~Item #6 — repository port refactor.~~ ✅ Done 2026-05-18
+8. ~~Item #12 — structured logging.~~ ✅ Done 2026-05-18

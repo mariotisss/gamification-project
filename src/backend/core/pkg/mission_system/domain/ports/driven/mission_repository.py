@@ -9,7 +9,7 @@ from core.pkg.shared.domain.entities.mission_completion import MissionCompletion
 
 class MissionRepository(ABC):
     @abstractmethod
-    def get_by_id(self, mission_id: UUID) -> Mission | None:
+    def get_by_id(self, mission_id: UUID) -> Mission:
         pass
 
     @abstractmethod

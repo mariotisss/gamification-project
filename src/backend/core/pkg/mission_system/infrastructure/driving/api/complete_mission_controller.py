@@ -1,7 +1,7 @@
-import logging
 from collections.abc import Callable
 from uuid import UUID
 
+import structlog
 from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 
@@ -14,8 +14,11 @@ from core.pkg.mission_system.infrastructure.driving.dtos.mission_dtos import (
     MissionCompletionResponse,
 )
 from core.pkg.shared.domain.exceptions.entity_not_found import EntityNotFoundError
+from core.pkg.user_system.domain.exceptions.concurrent_user_update import (
+    ConcurrentUserUpdateError,
+)
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class CompleteMissionController:
@@ -37,6 +40,11 @@ class CompleteMissionController:
             body: CompleteMissionRequest,
             use_case: MissionUseCases = Depends(dependency=self.use_case_factory),
         ) -> JSONResponse:
+            logger.info(
+                "incoming_complete_mission_request",
+                user_id=str(body.user_id),
+                mission_id=str(mission_id),
+            )
             try:
                 completion = use_case.complete_mission(
                     user_id=body.user_id,
@@ -48,11 +56,46 @@ class CompleteMissionController:
                     mission_id=str(completion.mission_id),
                     completed_at=completion.completed_at.isoformat(),
                 ).model_dump(mode="json")
+                logger.info(
+                    "outgoing_complete_mission_response",
+                    status_code=201,
+                    completion_id=str(completion.id),
+                )
                 return JSONResponse(status_code=201, content=response_data)
             except EntityNotFoundError as e:
+                logger.error(
+                    "complete_mission_not_found",
+                    user_id=str(body.user_id),
+                    mission_id=str(mission_id),
+                    exc_type=type(e).__name__,
+                    message=str(e),
+                )
                 return JSONResponse(status_code=404, content={"detail": str(e)})
             except MissionAlreadyCompletedError as e:
+                logger.error(
+                    "complete_mission_already_completed",
+                    user_id=str(body.user_id),
+                    mission_id=str(mission_id),
+                    exc_type=type(e).__name__,
+                    message=str(e),
+                )
+                return JSONResponse(status_code=409, content={"detail": str(e)})
+            except ConcurrentUserUpdateError as e:
+                logger.error(
+                    "complete_mission_concurrent_user_update",
+                    user_id=str(body.user_id),
+                    mission_id=str(mission_id),
+                    exc_type=type(e).__name__,
+                    message=str(e),
+                )
                 return JSONResponse(status_code=409, content={"detail": str(e)})
             except Exception as e:
-                logger.error(f"Error completing mission: {e}")
+                logger.error(
+                    "complete_mission_unhandled_error",
+                    user_id=str(body.user_id),
+                    mission_id=str(mission_id),
+                    exc_type=type(e).__name__,
+                    message=str(e),
+                    exc_info=True,
+                )
                 return JSONResponse(status_code=500, content={"detail": "Internal server error"})

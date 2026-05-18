@@ -2,18 +2,24 @@ from __future__ import annotations
 
 from uuid import uuid4
 
+import pytest
+
 from core.pkg.reward_system.domain.entities.reward import Reward
 from core.pkg.reward_system.infrastructure.driven.adapters.in_memory_reward_repository import (
     InMemoryRewardRepository,
 )
+from core.pkg.shared.domain.exceptions.entity_not_found import EntityNotFoundError
 
 
-def test_given_empty_repo_when_get_by_id_then_returns_none() -> None:
+def test_given_empty_repo_when_get_by_id_then_raises_entity_not_found() -> None:
     repo = InMemoryRewardRepository()
+    missing_id = uuid4()
 
-    result = repo.get_by_id(reward_id=uuid4())
+    with pytest.raises(expected_exception=EntityNotFoundError) as exc:
+        repo.get_by_id(reward_id=missing_id)
 
-    assert result is None
+    assert exc.value.entity_type == "Reward"
+    assert exc.value.entity_id == missing_id
 
 
 def test_given_saved_reward_when_get_by_id_then_returns_same_reward() -> None:

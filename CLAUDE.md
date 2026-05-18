@@ -28,6 +28,9 @@ Full rules in `.agents/rules/*.md`. Summary below — all apply always.
   - Numbers → `0`, `-1`, or domain-appropriate sentinel
 - `None` is only allowed for **internal** class/method variables (typed as `T | None`).
 
+## Logging / PII
+- Controllers currently log usernames and emails at INFO. Revisit when the app ships externally — move PII fields to DEBUG.
+
 ## Strict Typing (`python-strict-typing.md`)
 - All function signatures need parameter + return type hints (use `-> None` explicitly).
 - Annotate variables, especially complex types.

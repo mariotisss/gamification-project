@@ -12,14 +12,8 @@ post {
 
 body:json {
   {
-    "username": "alice",
-    "email": "alice@example.com"
-  }
-}
-
-script:post-response {
-  if (res.status === 201) {
-    bru.setEnvVar("user_id", res.body.id);
+    "username": "aida",
+    "email": "aida@example.com"
   }
 }
 
@@ -29,4 +23,10 @@ assert {
   res.body.xp: eq 0
   res.body.level: eq 1
   res.body.dev_coins: eq 0
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setEnvVar("user_id", res.body.id);
+  }
 }

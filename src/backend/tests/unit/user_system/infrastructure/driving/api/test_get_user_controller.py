@@ -4,8 +4,10 @@ from uuid import uuid4
 from unittest.mock import Mock
 
 import pytest
+import structlog
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from structlog.testing import capture_logs
 
 from core.pkg.shared.domain.exceptions.entity_not_found import EntityNotFoundError
 from core.pkg.user_system.domain.entities.user import User
@@ -53,3 +55,19 @@ def test_given_missing_user_when_get_user_then_returns_404(
     response = client.get(url=f"/api/users/{user_id}")
 
     assert response.status_code == 404
+
+
+def test_given_existing_user_when_get_user_then_logs_incoming_and_outgoing(
+    client: TestClient,
+    use_case: Mock,
+) -> None:
+    structlog.reset_defaults()
+    user = User(username="alice", email="a@example.com")
+    use_case.get_user.return_value = user
+
+    with capture_logs() as captured:
+        client.get(url=f"/api/users/{user.id}")
+
+    events = [entry["event"] for entry in captured]
+    assert "incoming_get_user_request" in events
+    assert "outgoing_get_user_response" in events

@@ -1,8 +1,9 @@
-import logging
+import structlog
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
+
 
 class HealthCheckController:
 
@@ -14,8 +15,7 @@ class HealthCheckController:
 
         @self.app.get(path=f"{self.base_path}/health")
         def handle_health_check() -> JSONResponse:
-            logger.info("Health check requested")
-            return JSONResponse(
-                status_code=200,
-                content={"status": "ok"}
-            )
+            logger.info("incoming_health_check_request")
+            response = JSONResponse(status_code=200, content={"status": "ok"})
+            logger.info("outgoing_health_check_response", status_code=200)
+            return response
